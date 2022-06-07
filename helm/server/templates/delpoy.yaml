@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.server.name }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.server.name }}
+  replicas: {{ .Values.server.replicas }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.server.name }}
+    spec:
+      containers:
+        - name: {{ .Values.server.name }}
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          ports:
+            - containerPort: 3000
+          env:
+            - name: SERVER_PORT
+              value: "{{ .Values.server.port }}"
+            - name: SERVER_MAX_PAYLOAD_SIZE_LIMIT
+              value: "{{ .Values.server.maxPayloadSizeLimit }}"
+            - name: SERVER_HEARTBEAT_INTERVAL
+              value: "{{ .Values.server.heartbeatInterval }}"
+            - name: HEALTH_SERVICE_PORT
+              value: "{{ .Values.health.port }}"
+            - name: HEALTH_SERVICE_DETECT_KUBERNETES
+              value: "{{ .Values.health.detectKubernetes }}"
+            - name: HEALTH_SERVICE_SHUTDOWN_DELAY
+              value: "{{ .Values.health.shutdownDelay }}"
+            - name: HEALTH_SERVICE_SHUTDOWN_HANDLER_TIMEOUT
+              value: "{{ .Values.health.shutdownHandlerTimeout }}"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: {{ .Values.health.port }}
+            failureThreshold: 1
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: {{ .Values.health.port }}
+            failureThreshold: 3
+            initialDelaySeconds: 10
+            # Allow sufficient amount of time (90 seconds = periodSeconds * failureThreshold)
+            # for the registered shutdown handlers to run to completion.
+            periodSeconds: 30
+            successThreshold: 1
+            # Setting a very low timeout value (e.g. 1 second) can cause false-positive
+            # checks and service interruption.
+            timeoutSeconds: 5

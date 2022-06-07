@@ -1,0 +1,52 @@
+# Controls the configuration of the webhook relay server
+server:
+  name: webhook-relay-server
+  replicas: 1
+  image:
+    repository: quay.io/codefresh/webhook-relay-server
+    pullPolicy: IfNotPresent
+    tag: stable
+
+  # Server port
+  port: "mock-redis"
+  # Controls the maximum request body size
+  maxPayloadSizeLimit: 3mb
+  # Delay in milliseconds between each heartbeat that the server will send to the clients
+  heartbeatInterval: 5000
+
+
+# Controls the configuration of the health service
+health:
+  # Health service port
+  port: 9000
+  # Start health service only if K8s env is detected
+  detectKubernetes: true
+  # Delays the shutdown handler by X milliseconds
+  shutdownDelay: 5000
+  # Time in milliseconds before forceful termination if shutdown handlers do not complete
+  shutdownHandlerTimeout: 10000
+
+# Controls the configuration of the eventbus
+eventbus:
+  # Redis configuration
+  redis:
+    # Redis URL for Server HA
+    url: redis_url
+    # Redis auto-reconnect strategy when connection is lost
+    autoReconnectStrategy:
+      # Exponential backoff options that are used for reconnecting to Redis when the connection is lost
+      reconnectBackoff:
+        redisReconnectBackoffFactor: 1
+        maxReconnectAttempts: 20
+    # Redis request retry strategy when Redis request (publish, subscribe, etc.) fails.
+    requestRetryStrategy:
+      # Maximum number of retry attempts for a pending Redis command before it gets flushed with an error
+      maxRetriesPerRequest: -1 # Unlimited
+    # If enabled, when a command can't be processed by Redis (being sent before the EventBus ready event)
+    enableOfflineQueue: true
+    # If enabled, the EventBus will emit ready event when the Redis server reports that it is ready to receive commands (e.g. finish loading data from disk)
+    enableReadyCheck: true
+
+
+
+
